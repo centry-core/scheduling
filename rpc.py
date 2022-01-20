@@ -10,7 +10,7 @@ def security_test_create(data: list, skip_validation_if_undefined: bool = True, 
     return {'scheduling': [i.dict() for i in scheduling_data]}
 
 
-def create_schedule(data: dict) -> int:
+def security_create_schedule(data: dict) -> int:
     pd_obj = SecurityScheduleModel(**data)
     schedule_id = pd_obj.save()
     return schedule_id

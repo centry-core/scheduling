@@ -25,7 +25,7 @@ from pylon.core.tools import module  # pylint: disable=E0611,E0401
 
 from .components import render_security_test_create
 from .init_db import init_db
-from .rpc import security_test_create, create_schedule, security_load_from_db_by_ids, delete_schedules
+from .rpc import security_test_create, security_create_schedule, security_load_from_db_by_ids, delete_schedules
 
 
 class Module(module.ModuleModel):
@@ -51,8 +51,8 @@ class Module(module.ModuleModel):
             name='_'.join(['security_test_create', 'scheduling'])
         )
         self.context.rpc_manager.register_function(
-            create_schedule,
-            name='_'.join(['scheduling', 'create_schedule'])
+            security_create_schedule,
+            name='_'.join(['scheduling', 'security_create_schedule'])
         )
         self.context.rpc_manager.register_function(
             security_load_from_db_by_ids,
@@ -69,7 +69,6 @@ class Module(module.ModuleModel):
     def deinit(self):  # pylint: disable=R0201
         """ De-init module """
         log.info(f"De-initializing {self.descriptor.name}")
-
 
     @staticmethod
     def execute_schedules(poll_period=60):
