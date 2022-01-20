@@ -5,18 +5,8 @@ from .models.schedule import Schedule
 from .models.security_pd import SecurityScheduleModel
 
 
-# def validate_data(data: list):
-#     results = parse_obj_as(List[ScheduleModel], data)
-
-
 def security_test_create(data: list, skip_validation_if_undefined: bool = True, **kwargs) -> dict:
-    # from pylon.core.tools import log
-    # rpc = RpcMixin().rpc
-    # log.warning('scheduling data')
-    # log.warning(data)
     scheduling_data = parse_obj_as(List[SecurityScheduleModel], data)
-    # log.warning('scheduling data parsed')
-    # log.warning(scheduling_data)
     return {'scheduling': [i.dict() for i in scheduling_data]}
 
 

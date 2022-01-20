@@ -47,7 +47,6 @@ class SecurityScheduleModel(BaseModel):
     def save(self) -> int:
         assert self.test_id, 'Test id is required'
         if self.id:
-            # db_obj = Schedule.query.get(self.id)
             db_obj = Schedule.query.filter(Schedule.id == self.id)
             db_obj.update(self._db_schedule.to_json(exclude_fields=('id', 'last_run', )))
             Schedule.commit()
@@ -67,21 +66,3 @@ class SecurityScheduleModel(BaseModel):
             id=db_obj.id,
             test_id=db_obj.rpc_kwargs.get('test_id'),
         )
-
-
-
-
-
-
-
-
-
-# id = Column(Integer, primary_key=True)
-#     # project_id = Column(Integer, nullable=False)
-#     name = Column(String(64), unique=False)
-#     cron = Column(String(64), unique=False)
-#     # test_parameters = Column(ARRAY(JSON), nullable=True)
-#     active = Column(Boolean)
-#     rpc_func = Column(String(64), unique=False, nullable=False)
-#     rpc_kwargs = Column(JSON, nullable=False, default={})
-#     last_run = Column(DateTime, nullable=True)
