@@ -3,12 +3,16 @@ from typing import Optional, List
 from pydantic import BaseModel, AnyUrl
 from pydantic.class_validators import validator
 from pydantic.fields import ModelField
-from pylon.core.tools import log
 
 from croniter import croniter
 
+from ...shared.models.pd.test_parameters import TestParameter
 from .schedule import Schedule
-from ...shared.utils.rpc import RpcMixin
+# from ...shared.models.pd.test_parameters import test_param_model_factory
+
+
+class SecurityScheduleTestParam(TestParameter):
+    _type_mapping_by_name = {'url to scan': List[AnyUrl]}
 
 
 class SecurityScheduleModel(BaseModel):
@@ -16,7 +20,8 @@ class SecurityScheduleModel(BaseModel):
 
     name: str
     cron: str
-    test_params: List[RpcMixin().rpc.call.test_param_model_factory()]
+    # test_params: List[test_param_model_factory()]
+    test_params: List[SecurityScheduleTestParam]
     active: bool
     test_id: Optional[int] = None
     id: Optional[int] = None

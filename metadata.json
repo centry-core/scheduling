@@ -1,6 +1,6 @@
 {
   "name": "Carrier Scheduling Plugin",
-  "version": "0.2",
+  "version": "0.3",
   "module": "plugins.scheduling",
   "depends_on": [],
   "init_after": []
