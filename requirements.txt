@@ -1,2 +1,2 @@
-pydantic
-croniter
+pydantic==1.9.0
+croniter==1.2.0
