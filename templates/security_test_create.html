@@ -1,0 +1,38 @@
+<div class="modal-body" id="security_scheduling">
+    <div class="row">
+        <div class="col mb-3">
+            <h7>Scheduling</h7>
+            <p>
+                <h13>You can create several schedules of this test with different parameters</h13>
+            </p>
+        </div>
+
+        <schedule-item
+                v-for="(item, index) in schedules_items"
+                :key="index"
+                v-model:name="item.name"
+                v-model:active="item.active"
+                v-model:cron="item.cron"
+                v-model:cron_radio="item.cron_radio"
+                v-model:test_params="item.test_params"
+                :schedule_id="index"
+                @delete="handleDeleteItem"
+                :errors="errors[index]"
+        >
+            {{ template_slot("params_table", payload = {
+                "caption": "",
+                "description": "",
+                "default_params": [],
+                "disabled_names": [],
+                "hidden_columns": [],
+                "modal_id": False
+            }) | safe }}
+        </schedule-item>
+    </div>
+    <button type="button" class="btn btn-sm btn-secondary mt-3"
+            @click.prevent="handleAddItem"
+    >
+        <span class="fa fa-plus"></span> Add schedule
+    </button>
+</div>
+<script src="{{ url_for('scheduling.static', filename='js/security_test_create.js') }}"></script>
