@@ -9,7 +9,7 @@ const scheduleItemInitialState = () => ({
 })
 
 
-const schedulingApp = Vue.createApp({
+const schedulingApp = {
     delimiters: ['[[', ']]'],
     data() {
         return {
@@ -31,9 +31,10 @@ const schedulingApp = Vue.createApp({
         }
 
     }
-})
+}
 
-schedulingApp.component('schedule-item', {
+// schedulingApp.component('schedule-item', {
+const ScheduleItem = {
     props: [...Object.keys(scheduleItemInitialState()), 'schedule_id'],
     emits: [
         ...Object.keys(scheduleItemInitialState()).filter(item => !['id', 'errors'].includes(item)).map(item => `update:${item}`),
@@ -210,10 +211,10 @@ schedulingApp.component('schedule-item', {
             </div>
         </div>
     `
-})
+}
 
-schedulingApp.config.compilerOptions.isCustomElement = tag => ['h9', 'h13', 'h7'].includes(tag)
-const schedulingVm = schedulingApp.mount('#security_scheduling')
+// schedulingApp.config.compilerOptions.isCustomElement = tag => ['h9', 'h13', 'h7'].includes(tag)
+// const schedulingVm = schedulingApp.mount('#security_scheduling')
 
 $(document).ready(() => {
     new SectionDataProvider('scheduling', {
@@ -233,4 +234,11 @@ $(document).ready(() => {
             },
         clearErrors: () => schedulingVm.errors = {}
     }).register()
+})
+
+$.when(vueApp).then(() => {
+    vueApp.component('SchedulingApp', schedulingApp)
+    vueApp.component('ScheduleItem', ScheduleItem)
+    vueApp.component('JiraPriorityMapping', JiraPriorityMapping)
+    vueApp.component('JiraDynamicField', JiraDynamicField)
 })
