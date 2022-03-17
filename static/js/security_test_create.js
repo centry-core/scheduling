@@ -8,32 +8,6 @@ const scheduleItemInitialState = () => ({
     errors: {}
 })
 
-
-const schedulingApp = {
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            schedules_items: [],
-            errors: {}
-        }
-    },
-    computed: {
-        body_data() {
-            return this.schedules_items
-        },
-    },
-    methods: {
-        handleDeleteItem(schedule_id) {
-            this.schedules_items.splice(schedule_id, 1)
-        },
-        handleAddItem() {
-            this.schedules_items.push(scheduleItemInitialState())
-        }
-
-    }
-}
-
-// schedulingApp.component('schedule-item', {
 const ScheduleItem = {
     props: [...Object.keys(scheduleItemInitialState()), 'schedule_id'],
     emits: [
@@ -213,32 +187,94 @@ const ScheduleItem = {
     `
 }
 
+const SchedulingApp = {
+    delimiters: ['[[', ']]'],
+    props: ['instance_name', 'params_table'],
+    components: {
+        'schedule-item': ScheduleItem
+    },
+    data() {
+        return {
+            schedules_items: [],
+            errors: {}
+        }
+    },
+    methods: {
+        handleDeleteItem(schedule_id) {
+            this.schedules_items.splice(schedule_id, 1)
+        },
+        handleAddItem() {
+            this.schedules_items.push(scheduleItemInitialState())
+        }
+    },
+    template: `
+        <div class="modal-body">
+            <div class="row">
+                <div class="col mb-3">
+                    <h7>Scheduling</h7>
+                    <p>
+                        <h13>You can create several schedules of this test with different parameters</h13>
+                    </p>
+                </div>
+        
+                <schedule-item
+                        v-for="(item, index) in schedules_items"
+                        :key="index"
+                        v-model:name="item.name"
+                        v-model:active="item.active"
+                        v-model:cron="item.cron"
+                        v-model:cron_radio="item.cron_radio"
+                        v-model:test_params="item.test_params"
+                        :schedule_id="index"
+                        @delete="handleDeleteItem"
+                        :errors="errors[index]"
+                >
+                    <div v-html="params_table"></div>
+                </schedule-item>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary mt-3"
+                    @click.prevent="handleAddItem"
+            >
+                <span class="fa fa-plus"></span> Add schedule
+            </button>
+        </div>
+    `
+}
+
+// schedulingApp.component('schedule-item', {
+
 // schedulingApp.config.compilerOptions.isCustomElement = tag => ['h9', 'h13', 'h7'].includes(tag)
 // const schedulingVm = schedulingApp.mount('#security_scheduling')
 
+
+
 $(document).ready(() => {
     new SectionDataProvider('scheduling', {
-        get: () => schedulingVm.body_data,
+        get: () => vueVm.scheduling.schedules_items,
         set: values => {
-            schedulingVm.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
+            vueVm.scheduling.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
         },
-        clear: () => schedulingVm.schedules_items = [],
+        clear: () => vueVm.scheduling.schedules_items = [],
         setError: data => {
                 const [_, index, field, ...rest] = data.loc
 
-                if (schedulingVm.errors[index]) {
-                    schedulingVm.errors[index][field] = {loc: rest, msg: data.msg}
+                if (vueVm.scheduling.errors[index]) {
+                    vueVm.scheduling.errors[index][field] = {loc: rest, msg: data.msg}
                 } else {
-                    schedulingVm.errors[index] = {[field]: {loc: rest, msg: data.msg}}
+                    vueVm.scheduling.errors[index] = {[field]: {loc: rest, msg: data.msg}}
                 }
             },
-        clearErrors: () => schedulingVm.errors = {}
+        clearErrors: () => vueVm.scheduling.errors = {}
     }).register()
 })
 
-$.when(vueApp).then(() => {
-    vueApp.component('SchedulingApp', schedulingApp)
-    vueApp.component('ScheduleItem', ScheduleItem)
-    vueApp.component('JiraPriorityMapping', JiraPriorityMapping)
-    vueApp.component('JiraDynamicField', JiraDynamicField)
-})
+
+// register_component('schedule-item', ScheduleItem)
+register_component('scheduling-app', SchedulingApp)
+
+// $.when(vueApp).then(() => {
+    // vueApp.component('SchedulingApp', SchedulingApp)
+    // vueApp.component('ScheduleItem', ScheduleItem)
+    // vueApp.component('JiraPriorityMapping', JiraPriorityMapping)
+    // vueApp.component('JiraDynamicField', JiraDynamicField)
+// })
