@@ -256,14 +256,14 @@ $(document).ready(() => {
         },
         clear: () => vueVm.scheduling.schedules_items = [],
         setError: data => {
-                const [_, index, field, ...rest] = data.loc
+            const [_, index, field, ...rest] = data.loc
 
-                if (vueVm.scheduling.errors[index]) {
-                    vueVm.scheduling.errors[index][field] = {loc: rest, msg: data.msg}
-                } else {
-                    vueVm.scheduling.errors[index] = {[field]: {loc: rest, msg: data.msg}}
-                }
-            },
+            if (vueVm.scheduling.errors[index]) {
+                vueVm.scheduling.errors[index][field] = {loc: rest, msg: data.msg}
+            } else {
+                vueVm.scheduling.errors[index] = {[field]: {loc: rest, msg: data.msg}}
+            }
+        },
         clearErrors: () => vueVm.scheduling.errors = {}
     }).register()
 })
