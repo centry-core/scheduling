@@ -1,7 +1,7 @@
-<scheduling-app
+<scheduling
         instance_name="scheduling"
         @register="register"
-        params_table="{{ template_slot("params_table", payload = {
+        params_table="{{ template_slot("params_table_content", payload = {
                 "caption": "",
                 "description": "",
                 "default_params": [],
@@ -9,5 +9,4 @@
                 "hidden_columns": [],
                 "modal_id": False
             }) }}"
-></scheduling-app>
-<script src="{{ url_for('scheduling.static', filename='js/security_test_create.js') }}"></script>
+></scheduling>

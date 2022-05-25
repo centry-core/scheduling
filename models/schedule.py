@@ -3,15 +3,13 @@ from queue import Empty
 
 from pylon.core.tools import log
 
-from ...shared.db_manager import Base
-from ...shared.models.abstract_base import AbstractBaseMixin
-from ...shared.utils.rpc import RpcMixin
-
 from sqlalchemy import Integer, Column, String, Boolean, UniqueConstraint, Index, ARRAY, JSON, DateTime
 from croniter import croniter
 
+from tools import db, db_tools, rpc_tools
 
-class Schedule(AbstractBaseMixin, RpcMixin, Base):
+
+class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
     __tablename__ = 'schedule'
 
     id = Column(Integer, primary_key=True)
@@ -29,17 +27,24 @@ class Schedule(AbstractBaseMixin, RpcMixin, Base):
         return croniter(self.cron, self.last_run, datetime).get_next() <= datetime.now()
 
     def run(self):
+        log.info('')
         log.info(f'Trying to run schedule {self.id}')
         log.info(f'is it time_to_run? {self.time_to_run}')
+        if self.last_run:
+            log.info(
+                'Next run in: [%s]',
+                 croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
+             )
+        log.info('')
         if self.time_to_run:
-            self.last_run = datetime.now()
-            self.commit()
             try:
                 self.rpc.call_function_with_timeout(
                     func=self.rpc_func,
                     timeout=5,
                     **self.rpc_kwargs
                 )
+                self.last_run = datetime.now()
+                self.commit()
             except Empty:
                 log.critical(f'Schedule func failed to run {self.rpc_func}')
 
