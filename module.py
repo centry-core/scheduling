@@ -48,8 +48,14 @@ class Module(module.ModuleModel):
         # self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
         self.descriptor.init_slots()
 
-        t = Thread(target=partial(self.execute_schedules, self.descriptor.config['task_poll_period']))
-        t.start()
+        self.thread = Thread(
+            target=partial(
+                self.execute_schedules,
+                self.descriptor.config['task_poll_period']
+            )
+        )
+        self.thread.daemon = True
+        self.thread.start()
 
     def deinit(self):  # pylint: disable=R0201
         """ De-init module """
@@ -67,4 +73,3 @@ class Module(module.ModuleModel):
                     sc.run()
                 except Exception as e:
                     log.critical(e)
-
