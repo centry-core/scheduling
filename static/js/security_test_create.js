@@ -8,32 +8,7 @@ const scheduleItemInitialState = () => ({
     errors: {}
 })
 
-
-const schedulingApp = Vue.createApp({
-    delimiters: ['[[', ']]'],
-    data() {
-        return {
-            schedules_items: [],
-            errors: {}
-        }
-    },
-    computed: {
-        body_data() {
-            return this.schedules_items
-        },
-    },
-    methods: {
-        handleDeleteItem(schedule_id) {
-            this.schedules_items.splice(schedule_id, 1)
-        },
-        handleAddItem() {
-            this.schedules_items.push(scheduleItemInitialState())
-        }
-
-    }
-})
-
-schedulingApp.component('schedule-item', {
+const ScheduleItem = {
     props: [...Object.keys(scheduleItemInitialState()), 'schedule_id'],
     emits: [
         ...Object.keys(scheduleItemInitialState()).filter(item => !['id', 'errors'].includes(item)).map(item => `update:${item}`),
@@ -86,11 +61,12 @@ schedulingApp.component('schedule-item', {
         errors(newE, oldE) {
             if (!!newE?.test_params) {
                 const [row, col_name, ..._] = newE.test_params.loc
-                const get_col_by_name = name => $(`#security_test_params thead th[data-field=${name}]`).index()
+                // const get_col_by_name = name => $(`#security_test_params thead th[data-field=${name}]`).index()
+                const get_col_by_name = name => $(`#${this.test_params_id} thead th[data-field=${name}]`).index()
                 $(`#${this.test_params_id} tr[data-index=${row}] td:nth-child(${get_col_by_name(col_name) + 1}) input`)
-                .addClass('is-invalid')
-                .next('div.invalid-tooltip-custom')
-                .text(newE.test_params.msg)
+                    .addClass('is-invalid')
+                    .next('div.invalid-tooltip-custom')
+                    .text(newE.test_params.msg)
             } else {
                 $(`#${this.test_params_id}`).removeClass('is-invalid')
             }
@@ -123,7 +99,8 @@ schedulingApp.component('schedule-item', {
                                 @change="$emit('update:active', $event.target.checked)"
                                 :checked="active"
                             >
-                            <span class="custom-toggle-slider rounded-circle"></span>
+<!--                            <span class="custom-toggle-slider rounded-circle"></span>-->
+                            <span class="custom-toggle_slider round"></span>
                         </label>
                     </div>
                 </div>
@@ -210,27 +187,80 @@ schedulingApp.component('schedule-item', {
             </div>
         </div>
     `
-})
+}
 
-schedulingApp.config.compilerOptions.isCustomElement = tag => ['h9', 'h13', 'h7'].includes(tag)
-const schedulingVm = schedulingApp.mount('#security_scheduling')
-
-$(document).ready(() => {
-    new SectionDataProvider('scheduling', {
-        get: () => schedulingVm.body_data,
-        set: values => {
-            schedulingVm.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
-        },
-        clear: () => schedulingVm.schedules_items = [],
-        setError: data => {
+const SchedulingApp = {
+    delimiters: ['[[', ']]'],
+    props: ['instance_name', 'params_table'],
+    components: {
+        'schedule-item': ScheduleItem
+    },
+    data() {
+        return {
+            schedules_items: [],
+            errors: {}
+        }
+    },
+    mounted() {
+        new SectionDataProvider('scheduling', {
+            get: () => this.schedules_items,
+            set: values => {
+                this.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
+            },
+            clear: () => this.schedules_items = [],
+            setError: data => {
                 const [_, index, field, ...rest] = data.loc
 
-                if (schedulingVm.errors[index]) {
-                    schedulingVm.errors[index][field] = {loc: rest, msg: data.msg}
+                if (this.errors[index]) {
+                    this.errors[index][field] = {loc: rest, msg: data.msg}
                 } else {
-                    schedulingVm.errors[index] = {[field]: {loc: rest, msg: data.msg}}
+                    this.errors[index] = {[field]: {loc: rest, msg: data.msg}}
                 }
             },
-        clearErrors: () => schedulingVm.errors = {}
-    }).register()
-})
+            clearErrors: () => this.errors = {}
+        }).register()
+    },
+    methods: {
+        handleDeleteItem(schedule_id) {
+            this.schedules_items.splice(schedule_id, 1)
+        },
+        handleAddItem() {
+            this.schedules_items.push(scheduleItemInitialState())
+        }
+    },
+    template: `
+        <div class="modal-body">
+            <div class="row">
+                <div class="col mb-3">
+                    <h7>Scheduling</h7>
+                    <p>
+                        <h13>You can create several schedules of this test with different parameters</h13>
+                    </p>
+                </div>
+        
+                <schedule-item
+                        v-for="(item, index) in schedules_items"
+                        :key="index"
+                        v-model:name="item.name"
+                        v-model:active="item.active"
+                        v-model:cron="item.cron"
+                        v-model:cron_radio="item.cron_radio"
+                        v-model:test_params="item.test_params"
+                        :schedule_id="index"
+                        @delete="handleDeleteItem"
+                        :errors="errors[index]"
+                >
+                    <div v-html="params_table"></div>
+                </schedule-item>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary mt-3"
+                    @click.prevent="handleAddItem"
+            >
+                <span class="fa fa-plus mr-2"></span> Add schedule
+            </button>
+        </div>
+    `
+}
+
+
+register_component('scheduling', SchedulingApp)
