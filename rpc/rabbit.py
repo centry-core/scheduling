@@ -20,14 +20,13 @@ class RPC:
         rabbit_queue_validator_id = secrets.get("rabbit_queue_validator_id") if "rabbit_queue_validator_id" in secrets \
             else hidden_secrets.get("rabbit_queue_validator_id")
         if rabbit_queue_validator_id:
-            task_tools.run_task(project_id, event, rabbit_queue_validator_id)
-        return "Done"
+            task_tools.run_task(project_id, event, rabbit_queue_validator_id, queue_name="__internal")
 
     @web.rpc('create_rabbit_schedule')
     def create_rabbit_schedule(self, name, project_id, task_id=None):
         Schedule(
             name=name,
-            cron="*/3 * * * *",
+            cron="*/1 * * * *",
             active=True,
             rpc_func="check_rabbit_queues",
             rpc_kwargs={
