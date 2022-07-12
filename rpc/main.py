@@ -11,3 +11,8 @@ class RPC:
         Schedule.query.filter(Schedule.id.in_(delete_ids)).delete()
         Schedule.commit()
         return delete_ids
+
+    @web.rpc('get_schedules')
+    def get_schedules(self) -> List[int]:
+        schedules = Schedule.query.all()
+        return schedules
