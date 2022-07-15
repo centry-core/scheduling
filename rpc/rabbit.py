@@ -25,7 +25,7 @@ class RPC:
     def create_rabbit_schedule(self, name, project_id, task_id=None):
         Schedule(
             name=name,
-            cron="*/1 * * * *",
+            cron="*/10 * * * *",
             active=True,
             rpc_func="check_rabbit_queues",
             rpc_kwargs={
