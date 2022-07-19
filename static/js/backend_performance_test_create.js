@@ -202,23 +202,25 @@ const SchedulingApp = {
         }
     },
     mounted() {
-        // new SectionDataProvider('scheduling', {
-        //     get: () => this.schedules_items,
-        //     set: values => {
-        //         this.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
-        //     },
-        //     clear: () => this.schedules_items = [],
-        //     setError: data => {
-        //         const [_, index, field, ...rest] = data.loc
-        //
-        //         if (this.errors[index]) {
-        //             this.errors[index][field] = {loc: rest, msg: data.msg}
-        //         } else {
-        //             this.errors[index] = {[field]: {loc: rest, msg: data.msg}}
-        //         }
-        //     },
-        //     clearErrors: () => this.errors = {}
-        // }).register()
+        window.SchedulingSection = {
+            Manager: () => ({
+                get: () => this.schedules_items,
+                set: values => {
+                    this.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
+                },
+                clear: () => this.schedules_items = [],
+                setError: data => {
+                    const [_, index, field, ...rest] = data.loc
+
+                    if (this.errors[index]) {
+                        this.errors[index][field] = {loc: rest, msg: data.msg}
+                    } else {
+                        this.errors[index] = {[field]: {loc: rest, msg: data.msg}}
+                    }
+                },
+                clearErrors: () => this.errors = {}
+            })
+        }
     },
     methods: {
         handleDeleteItem(schedule_id) {
