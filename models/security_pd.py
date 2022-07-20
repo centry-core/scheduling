@@ -7,6 +7,8 @@ from ...shared.models.pd.test_parameters import TestParameter
 
 
 class SecurityScheduleTestParam(TestParameter):
+    class Config:
+        anystr_lower = True
     _type_mapping_by_name = {'url to scan': List[AnyUrl]}
 
 
