@@ -1,14 +1,13 @@
 from ..models.schedule import Schedule
-from ...projects.tools.secrets_tools import get_project_hidden_secrets, get_project_secrets
 from pylon.core.tools import web, log
-from tools import task_tools
+from tools import task_tools, secrets_tools
 
 
 class RPC:
     @web.rpc('check_rabbit_queues')
     def check_rabbit_queues(self, project_id: int, task_id=None):
-        secrets = get_project_secrets(project_id)
-        hidden_secrets = get_project_hidden_secrets(project_id)
+        secrets = secrets_tools.get_project_secrets(project_id)
+        hidden_secrets = secrets_tools.get_project_hidden_secrets(project_id)
         if task_id:
             log.info(f"check public rabbit queues")
             event = [{"user": hidden_secrets["rabbit_user"], "password": hidden_secrets["rabbit_password"],
