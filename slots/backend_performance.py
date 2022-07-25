@@ -9,7 +9,7 @@ class Slot:
                 'backend_performance/test_create_content.html',
             )
 
-    @web.slot('backend_performance_scheduling_test_creat_scripts')
+    @web.slot('backend_performance_scheduling_test_create_scripts')
     def test_create_scripts(self, context, slot, payload):
         with context.app.app_context():
             return self.descriptor.render_template(
