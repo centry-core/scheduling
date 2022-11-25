@@ -2,6 +2,6 @@
   "name": "Scheduling Plugin",
   "version": "0.4",
   "module": "plugins.scheduling",
-  "depends_on": ["shared", "theme"],
+  "depends_on": ["shared", "theme", "tasks", "secrets"],
   "init_after": []
 }
