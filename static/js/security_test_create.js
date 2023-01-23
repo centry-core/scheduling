@@ -232,10 +232,8 @@ const SchedulingApp = {
         <div class="modal-body">
             <div class="row">
                 <div class="col mb-3">
-                    <h7>Scheduling</h7>
-                    <p>
-                        <h13>You can create several schedules of this test with different parameters</h13>
-                    </p>
+                    <p class="font-h5 font-bold font-uppercase">Scheduling</p>
+                    <p class="font-h6 font-weight-400">You can create several schedules of this test with different parameters</p>
                 </div>
         
                 <schedule-item
@@ -253,7 +251,7 @@ const SchedulingApp = {
                     <div v-html="params_table"></div>
                 </schedule-item>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary mt-3"
+            <button type="button" class="btn btn-sm btn-secondary"
                     @click.prevent="handleAddItem"
             >
                 <span class="fa fa-plus mr-2"></span> Add schedule
