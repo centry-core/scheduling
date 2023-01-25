@@ -84,15 +84,15 @@ const ScheduleItem = {
 
     },
     template: `
-        <div class="col-12" >
+        <div class="col-12 px-1">
             <div class="card card-row-1">
                 <div class="card-header">
                     <div class="d-flex">
-                        <h7 class="flex-grow-1">Set schedule</h7>
-                        <button type="button" class="btn btn-24 btn-action"
+                        <p class="font-h5 font-semibold flex-grow-1">Set schedule</p>
+                        <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs mr-2"
                             @click="$emit('delete', schedule_id)"
                         >
-                            <i class="fas fa-trash"></i>
+                            <i class="icon__18x18 icon-delete"></i>
                         </button>
                         <label class="custom-toggle">
                             <input type="checkbox"
@@ -108,7 +108,7 @@ const ScheduleItem = {
                     <div class="row justify-content-around">
                         <div class="col-6 row row-cols-1">
                             <label>
-                                <h9>Schedule name</h9>
+                                <p class="font-h6 font-semibold mb-2">Schedule name</p>
                                 <input class="form-control form-control-alternative" type="text"
                                    placeholder="Name"
                                    :value="name"
@@ -120,10 +120,10 @@ const ScheduleItem = {
                         </div>
                         <div class="col-6 row row-cols-1">
                             <div class="col-12">
-                                <h9>Schedule</h9>
+                                <p class="font-h6 font-semibold">Schedule</p>
                             </div>
                             <div class="col-12">
-                                <div class="col-12 form-group d-flex justify-content-center mt-3">
+                                <div class="col-12 d-flex justify-content-between px-0 my-3">
                                     <div class="form-check form-check-inline" 
                                         v-for="t in periods"
                                     >
@@ -154,7 +154,7 @@ const ScheduleItem = {
                                     >
                                     <div class="invalid-feedback">[[ errors?.cron?.msg ]]</div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 mt-2 px-0">
                                     <h13 style="color: var(--basic)">
                                         <i class="fa fa-info-circle"></i> Symbols
                                     </h13>
@@ -171,13 +171,11 @@ const ScheduleItem = {
                              :data-target="'#' + test_params_id"
                              @click="test_params_open = !test_params_open"
                         >
-                            <h7 style="color: var(--basic)">
+                            <p class="font-h5 font-uppercase font-semibold" style="color: var(--basic)">
                                 Test parameters <i class="fa" 
                                     :class="test_params_open ? 'fa-angle-down' : 'fa-angle-right'"></i>
-                            </h7>
-                            <p>
-                                <h13>Specify parameters for test runs</h13>
                             </p>
+                            <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
                         </div>
                         <div class="collapse col-12 pl-0" :id="test_params_id">
                             <slot></slot>
@@ -253,7 +251,7 @@ const SchedulingApp = {
                     <div v-html="params_table"></div>
                 </schedule-item>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary"
+            <button type="button" class="btn btn-sm btn-secondary ml-1"
                     @click.prevent="handleAddItem"
             >
                 <span class="fa fa-plus mr-2"></span> Add schedule
