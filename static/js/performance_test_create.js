@@ -18,7 +18,6 @@ const ScheduleItem = {
     data() {
         return {
             periods: ['daily', 'weekly', 'monthly', 'yearly', 'custom'],
-            test_params_open: false,
         }
     },
     mounted() {
@@ -84,102 +83,83 @@ const ScheduleItem = {
 
     },
     template: `
-        <div class="col-12 px-1">
-            <div class="card card-row-1">
-                <div class="card-header">
-                    <div class="d-flex">
-                        <p class="font-h5 font-semibold flex-grow-1">Set schedule</p>
-                        <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs mr-2"
-                            @click="$emit('delete', schedule_id)"
-                        >
-                            <i class="icon__18x18 icon-delete"></i>
-                        </button>
-                        <label class="custom-toggle">
-                            <input type="checkbox"
-                                @change="$emit('update:active', $event.target.checked)"
-                                :checked="active"
-                            >
+        <div class="mb-3 card card-x mx-auto px-24 py-20">
+            <div class="d-flex mb-3">
+                <p class="font-h5 font-bold flex-grow-1">Set schedule</p>
+                <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs mr-2"
+                    @click="$emit('delete', schedule_id)"
+                >
+                    <i class="icon__18x18 icon-delete"></i>
+                </button>
+                <label class="custom-toggle">
+                    <input type="checkbox"
+                        @change="$emit('update:active', $event.target.checked)"
+                        :checked="active"
+                    >
 <!--                            <span class="custom-toggle-slider rounded-circle"></span>-->
-                            <span class="custom-toggle_slider round"></span>
+                    <span class="custom-toggle_slider round"></span>
+                </label>
+            </div>
+            <div>
+                <div class="row justify-content-around">
+                    <div class="col-6 row row-cols-1">
+                        <label>
+                            <p class="font-h5 font-semibold mb-2">Schedule name</p>
+                            <input class="form-control form-control-alternative" type="text"
+                               placeholder="Name"
+                               :value="name"
+                               @change="$emit('update:name', $event.target.value)"
+                               :class="{ 'is-invalid': errors?.name }"
+                            >
+                            <div class="invalid-feedback">[[ errors?.name?.msg ]]</div>
                         </label>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="row justify-content-around">
-                        <div class="col-6 row row-cols-1">
-                            <label>
-                                <p class="font-h6 font-semibold mb-2">Schedule name</p>
-                                <input class="form-control form-control-alternative" type="text"
-                                   placeholder="Name"
-                                   :value="name"
-                                   @change="$emit('update:name', $event.target.value)"
-                                   :class="{ 'is-invalid': errors?.name }"
-                                >
-                                <div class="invalid-feedback">[[ errors?.name?.msg ]]</div>
-                            </label>
+                    <div class="col-6 row row-cols-1">
+                        <div class="col-12">
+                            <p class="font-h5 font-semibold">Schedule</p>
                         </div>
-                        <div class="col-6 row row-cols-1">
-                            <div class="col-12">
-                                <p class="font-h6 font-semibold">Schedule</p>
+                        <div class="col-12">
+                            <div class="d-flex my-3">
+                                <div class="d-flex" style="margin-right: 24px" v-for="t in periods">
+                                    <input class="mx-2 custom-radio" 
+                                        type="radio"
+                                        :value="t"
+                                        :id="'cron_radio_' + t"
+                                        :name="'cron_radio_' + schedule_id"
+                                        :checked="cron_radio === t"
+                                        @change="handleInputChange">
+                                    <label class="mb-0 w-100 d-flex align-items-center" :for="'cron_radio_' + t">
+                                        <span class="w-100 d-inline-block font-h5 font-weight-400 text-capitalize">[[ t ]]</span>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="col-12">
-                                <div class="col-12 d-flex justify-content-between px-0 my-3">
-                                    <div class="form-check form-check-inline" 
-                                        v-for="t in periods"
-                                    >
-                                        <label>
-                                            <input type="radio" class="form-check-input align-middle" 
-                                                :value="t"
-                                                :name="'cron_radio_' + schedule_id"
-                                                :checked="cron_radio === t"
-                                                @change="handleInputChange"
-                                            >
-                                            <h13 class="form-check-label text-capitalize">[[ t ]]</h13>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-12 input-group d-flex justify-content-around p-4 m-auto"
-                                    style="
-                                        border: 1px solid #DBE2E8;
-                                        box-sizing: border-box;
-                                        border-radius: 4px;
-                                    "
+                            <p class="font-h6 font-semibold mb-1 d-flex">Crontab expression <i class="icon__16x16 icon-info__16 ml-1"></i></p>
+                            <div class="input-group d-flex justify-content-around m-auto">
+                                <input class="form-control form-control-alternative text-center" type="text"
+                                   placeholder="* * * * *"
+                                   style="border-top-right-radius: 4px; border-bottom-right-radius: 4px"
+                                   :value="cron"
+                                   :disabled="cron_radio !== 'custom'"
+                                   @change="$emit('update:cron', $event.target.value)"
+                                   :class="{ 'is-invalid': errors?.cron }"
                                 >
-                                    <input class="form-control form-control-alternative text-center" type="text"
-                                       placeholder="* * * * *"
-                                       :value="cron"
-                                       :disabled="cron_radio !== 'custom'"
-                                       @change="$emit('update:cron', $event.target.value)"
-                                       :class="{ 'is-invalid': errors?.cron }"
-                                    >
-                                    <div class="invalid-feedback">[[ errors?.cron?.msg ]]</div>
-                                </div>
-                                <div class="col-12 mt-2 px-0">
-                                    <h13 style="color: var(--basic)">
-                                        <i class="fa fa-info-circle"></i> Symbols
-                                    </h13>
-                                </div>
-
+                                <div class="invalid-feedback">[[ errors?.cron?.msg ]]</div>
                             </div>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="mb-1"
-                             aria-expanded="false"
-                             data-toggle="collapse"
-                             style="cursor: pointer"
-                             :data-target="'#' + test_params_id"
-                             @click="test_params_open = !test_params_open"
-                        >
-                            <p class="font-h5 font-uppercase font-semibold" style="color: var(--basic)">
-                                Test parameters <i class="fa" 
-                                    :class="test_params_open ? 'fa-angle-down' : 'fa-angle-right'"></i>
-                            </p>
-                            <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
-                        </div>
-                        <div class="collapse col-12 pl-0" :id="test_params_id">
-                            <slot></slot>
-                        </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="mb-3"
+                         style="cursor: pointer"
+                         :data-target="'#' + test_params_id"
+                    >
+                        <p class="font-h5 font-uppercase font-semibold">
+                            Test parameters
+                        </p>
+                        <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
+                    </div>
+                    <div class="col-12 pl-0 section-h-auto" :id="test_params_id">
+                        <slot></slot>
                     </div>
                 </div>
             </div>
@@ -251,7 +231,7 @@ const SchedulingApp = {
                     <div v-html="params_table"></div>
                 </schedule-item>
             </div>
-            <button type="button" class="btn btn-sm btn-secondary ml-1"
+            <button type="button" class="btn btn-sm btn-secondary"
                     @click.prevent="handleAddItem"
             >
                 <span class="fa fa-plus mr-2"></span> Add schedule
