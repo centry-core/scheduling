@@ -83,9 +83,9 @@ const ScheduleItem = {
 
     },
     template: `
-        <div class="mb-3 card card-x mx-auto px-24 py-20">
+        <div class="mb-3 card card-x mx-auto px-24 pt-20 pb-24">
             <div class="d-flex mb-3">
-                <p class="font-h5 font-bold flex-grow-1">Set schedule</p>
+                <p class="font-h5 font-bold flex-grow-1">Schedule [[ schedule_id + 1 ]]</p>
                 <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs mr-2"
                     @click="$emit('delete', schedule_id)"
                 >
@@ -96,17 +96,16 @@ const ScheduleItem = {
                         @change="$emit('update:active', $event.target.checked)"
                         :checked="active"
                     >
-<!--                            <span class="custom-toggle-slider rounded-circle"></span>-->
                     <span class="custom-toggle_slider round"></span>
                 </label>
             </div>
             <div>
-                <div class="row justify-content-around">
-                    <div class="col-6 row row-cols-1">
-                        <label>
+                <div class="d-grid grid-column-2 gap-50">
+                    <div>
+                        <label class="w-100">
                             <p class="font-h5 font-semibold mb-2">Schedule name</p>
                             <input class="form-control form-control-alternative" type="text"
-                               placeholder="Name"
+                               placeholder="Schedule name"
                                :value="name"
                                @change="$emit('update:name', $event.target.value)"
                                :class="{ 'is-invalid': errors?.name }"
@@ -114,11 +113,9 @@ const ScheduleItem = {
                             <div class="invalid-feedback">[[ errors?.name?.msg ]]</div>
                         </label>
                     </div>
-                    <div class="col-6 row row-cols-1">
-                        <div class="col-12">
-                            <p class="font-h5 font-semibold">Schedule</p>
-                        </div>
-                        <div class="col-12">
+                    <div>
+                        <p class="font-h5 font-semibold">Schedule</p>
+                        <div>
                             <div class="d-flex my-3">
                                 <div class="d-flex" style="margin-right: 24px" v-for="t in periods">
                                     <input class="mx-2 custom-radio" 
@@ -148,8 +145,8 @@ const ScheduleItem = {
                         </div>
                     </div>
                 </div>
-                <div class="row mt-3">
-                    <div class="mb-3"
+                <div class="mt-3">
+                    <div class="mb-1"
                          style="cursor: pointer"
                          :data-target="'#' + test_params_id"
                     >
@@ -158,7 +155,7 @@ const ScheduleItem = {
                         </p>
                         <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
                     </div>
-                    <div class="col-12 pl-0 section-h-auto" :id="test_params_id">
+                    <div class="section-h-auto" :id="test_params_id">
                         <slot></slot>
                     </div>
                 </div>
