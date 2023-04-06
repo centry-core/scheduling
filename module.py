@@ -23,9 +23,11 @@ from threading import Thread
 from pylon.core.tools import log, web  # pylint: disable=E0611,E0401
 from pylon.core.tools import module  # pylint: disable=E0611,E0401
 
-# from .components import render_security_test_create
 from .init_db import init_db
-# from .rpc import security_test_create, security_create_schedule, security_load_from_db_by_ids, delete_schedules
+
+from tools import VaultClient
+
+from .models.schedule import Schedule
 
 
 class Module(module.ModuleModel):
@@ -48,6 +50,8 @@ class Module(module.ModuleModel):
         # self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
         self.descriptor.init_slots()
 
+        self.create_rabbit_schedule()
+
         self.thread = Thread(
             target=partial(
                 self.execute_schedules,
@@ -55,6 +59,7 @@ class Module(module.ModuleModel):
             )
         )
         self.thread.daemon = True
+        self.thread.name = 'scheduling_thread'
         self.thread.start()
 
     def deinit(self):  # pylint: disable=R0201
@@ -74,3 +79,23 @@ class Module(module.ModuleModel):
                     sc.run()
                 except Exception as e:
                     log.critical(e)
+
+    def create_rabbit_schedule(self) -> dict:
+        schedule_name = 'rabbit_queue_schedule'
+        rabbit_schedule = Schedule.query.filter(
+            Schedule.name == schedule_name
+        ).first()
+        if rabbit_schedule:
+            log.warning('Rabbit queue schedule already exists!')
+        else:
+            rabbit_schedule = Schedule(
+                name=schedule_name,
+                cron="*/10 * * * *",
+                active=True,
+                rpc_func="check_rabbit_queues",
+                rpc_kwargs={}
+            )
+            rabbit_schedule.insert()
+            log.warning('Rabbit queue schedule created')
+
+        return rabbit_schedule.to_json()
