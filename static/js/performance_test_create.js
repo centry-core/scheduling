@@ -18,7 +18,6 @@ const ScheduleItem = {
     data() {
         return {
             periods: ['daily', 'weekly', 'monthly', 'yearly', 'custom'],
-            test_params_open: false,
         }
     },
     mounted() {
@@ -86,7 +85,7 @@ const ScheduleItem = {
     template: `
         <div class="mb-3 card card-x mx-auto px-24 pt-20 pb-24">
             <div class="d-flex mb-3">
-                <p class="font-h5 font-bold flex-grow-1">Set schedule</p>
+                <p class="font-h5 font-bold flex-grow-1">Schedule [[ schedule_id + 1 ]]</p>
                 <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs mr-2"
                     @click="$emit('delete', schedule_id)"
                 >
@@ -100,67 +99,64 @@ const ScheduleItem = {
                     <span class="custom-toggle_slider round"></span>
                 </label>
             </div>
-                <div>
-                    <div class="d-grid grid-column-2 gap-50">
+            <div>
+                <div class="d-grid grid-column-2 gap-50">
+                    <div>
+                        <label class="w-100">
+                            <p class="font-h5 font-semibold mb-2">Schedule name</p>
+                            <input class="form-control form-control-alternative" type="text"
+                               placeholder="Schedule name"
+                               :value="name"
+                               @change="$emit('update:name', $event.target.value)"
+                               :class="{ 'is-invalid': errors?.name }"
+                            >
+                            <div class="invalid-feedback">[[ errors?.name?.msg ]]</div>
+                        </label>
+                    </div>
+                    <div>
+                        <p class="font-h5 font-semibold">Schedule</p>
                         <div>
-                            <label class="w-100">
-                                <p class="font-h5 font-semibold mb-2">Schedule name</p>
-                                <input class="form-control form-control-alternative" type="text"
-                                   placeholder="Schedule name"
-                                   :value="name"
-                                   @change="$emit('update:name', $event.target.value)"
-                                   :class="{ 'is-invalid': errors?.name }"
+                            <div class="d-flex my-3">
+                                <div class="d-flex" style="margin-right: 24px" v-for="t in periods">
+                                    <input class="mx-2 custom-radio" 
+                                        type="radio"
+                                        :value="t"
+                                        :id="'cron_radio_' + t"
+                                        :name="'cron_radio_' + schedule_id"
+                                        :checked="cron_radio === t"
+                                        @change="handleInputChange">
+                                    <label class="mb-0 w-100 d-flex align-items-center" :for="'cron_radio_' + t">
+                                        <span class="w-100 d-inline-block font-h5 font-weight-400 text-capitalize">[[ t ]]</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="font-h6 font-semibold mb-1 d-flex">Crontab expression <i class="icon__16x16 icon-info__16 ml-1"></i></p>
+                            <div class="input-group d-flex justify-content-around m-auto">
+                                <input class="form-control form-control-alternative text-center" type="text"
+                                   placeholder="* * * * *"
+                                   style="border-top-right-radius: 4px; border-bottom-right-radius: 4px"
+                                   :value="cron"
+                                   :disabled="cron_radio !== 'custom'"
+                                   @change="$emit('update:cron', $event.target.value)"
+                                   :class="{ 'is-invalid': errors?.cron }"
                                 >
-                                <div class="invalid-feedback">[[ errors?.name?.msg ]]</div>
-                            </label>
-                        </div>
-                        <div>
-                            <p class="font-h5 font-semibold">Schedule</p>
-                            <div>
-                                <div class="d-flex my-3">
-                                    <div class="d-flex" style="margin-right: 24px"
-                                        v-for="t in periods">
-                                        <input class="mx-2 custom-radio" 
-                                            type="radio" 
-                                            :value="t"
-                                            :id="'cron_radio_' + t"
-                                            :name="'cron_radio_' + schedule_id"
-                                            :checked="cron_radio === t"
-                                            @change="handleInputChange"
-                                        >
-                                        <label class="mb-0 w-100 d-flex align-items-center" :for="'cron_radio_' + t">
-                                            <span class="w-100 d-inline-block font-h5 font-weight-400 text-capitalize">[[ t ]]</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                <p class="font-h6 font-semibold mb-1 d-flex">Crontab expression <i class="icon__16x16 icon-info__16 ml-1"></i></p>
-                                <div class="input-group d-flex justify-content-around m-auto">
-                                    <input class="form-control form-control-alternative text-center" type="text"
-                                       placeholder="* * * * *"
-                                       style="border-top-right-radius: 4px; border-bottom-right-radius: 4px"
-                                       :value="cron"
-                                       :disabled="cron_radio !== 'custom'"
-                                       @change="$emit('update:cron', $event.target.value)"
-                                       :class="{ 'is-invalid': errors?.cron }"
-                                    >
-                                    <div class="invalid-feedback">[[ errors?.cron?.msg ]]</div>
-                                </div>
+                                <div class="invalid-feedback">[[ errors?.cron?.msg ]]</div>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <div class="mb-1"
-                             style="cursor: pointer"
-                             :data-target="'#' + test_params_id"
-                        >
-                            <p class="font-h5 font-uppercase font-semibold">
-                                Test parameters
-                            </p>
-                            <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
-                        </div>
-                        <div class="section-h-auto" :id="test_params_id">
-                            <slot></slot>
-                        </div>
+                </div>
+                <div class="mt-3">
+                    <div class="mb-1"
+                         style="cursor: pointer"
+                         :data-target="'#' + test_params_id"
+                    >
+                        <p class="font-h5 font-uppercase font-semibold">
+                            Test parameters
+                        </p>
+                        <p class="font-h6 font-weight-400">Specify parameters for test runs</p>
+                    </div>
+                    <div class="section-h-auto" :id="test_params_id">
+                        <slot></slot>
                     </div>
                 </div>
             </div>
@@ -181,23 +177,25 @@ const SchedulingApp = {
         }
     },
     mounted() {
-        new SectionDataProvider('scheduling', {
-            get: () => this.schedules_items,
-            set: values => {
-                this.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
-            },
-            clear: () => this.schedules_items = [],
-            setError: data => {
-                const [_, index, field, ...rest] = data.loc
+        window.SchedulingSection = {
+            Manager: () => ({
+                get: () => this.schedules_items,
+                set: values => {
+                    this.schedules_items = values.map(item => ({...scheduleItemInitialState(), ...item}))
+                },
+                clear: () => this.schedules_items = [],
+                setError: data => {
+                    const [_, index, field, ...rest] = data.loc
 
-                if (this.errors[index]) {
-                    this.errors[index][field] = {loc: rest, msg: data.msg}
-                } else {
-                    this.errors[index] = {[field]: {loc: rest, msg: data.msg}}
-                }
-            },
-            clearErrors: () => this.errors = {}
-        }).register()
+                    if (this.errors[index]) {
+                        this.errors[index][field] = {loc: rest, msg: data.msg}
+                    } else {
+                        this.errors[index] = {[field]: {loc: rest, msg: data.msg}}
+                    }
+                },
+                clearErrors: () => this.errors = {}
+            })
+        }
     },
     methods: {
         handleDeleteItem(schedule_id) {

@@ -1,7 +1,7 @@
 {
-  "name": "Carrier Scheduling Plugin",
-  "version": "0.3",
+  "name": "Scheduling Plugin",
+  "version": "0.4",
   "module": "plugins.scheduling",
-  "depends_on": [],
+  "depends_on": ["shared", "theme", "tasks", "secrets"],
   "init_after": []
 }

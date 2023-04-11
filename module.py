@@ -23,9 +23,11 @@ from threading import Thread
 from pylon.core.tools import log, web  # pylint: disable=E0611,E0401
 from pylon.core.tools import module  # pylint: disable=E0611,E0401
 
-from .components import render_security_test_create
 from .init_db import init_db
-from .rpc import security_test_create, security_create_schedule, security_load_from_db_by_ids, delete_schedules
+
+from tools import VaultClient
+
+from .models.schedule import Schedule
 
 
 class Module(module.ModuleModel):
@@ -37,49 +39,63 @@ class Module(module.ModuleModel):
 
     def init(self):
         """ Init module """
-        log.info(f"Initializing module {self.descriptor.name}")
+        log.info("Initializing module")
 
         init_db()
 
         self.descriptor.init_blueprint()
 
-        self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
+        self.descriptor.init_rpcs()
 
-        # rpc
-        self.context.rpc_manager.register_function(
-            security_test_create,
-            name='_'.join(['security_test_create', 'scheduling'])
-        )
-        self.context.rpc_manager.register_function(
-            security_create_schedule,
-            name='_'.join(['scheduling', 'security_create_schedule'])
-        )
-        self.context.rpc_manager.register_function(
-            security_load_from_db_by_ids,
-            name='_'.join(['scheduling', 'security_load_from_db_by_ids'])
-        )
-        self.context.rpc_manager.register_function(
-            delete_schedules,
-            name='_'.join(['scheduling', 'delete_schedules'])
-        )
+        # self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
+        self.descriptor.init_slots()
 
-        t = Thread(target=partial(self.execute_schedules, self.descriptor.config['task_poll_period']))
-        t.start()
+        self.create_rabbit_schedule()
+
+        self.thread = Thread(
+            target=partial(
+                self.execute_schedules,
+                self.descriptor.config['task_poll_period']
+            )
+        )
+        self.thread.daemon = True
+        self.thread.name = 'scheduling_thread'
+        self.thread.start()
 
     def deinit(self):  # pylint: disable=R0201
         """ De-init module """
-        log.info(f"De-initializing {self.descriptor.name}")
+        log.info("De-initializing")
 
     @staticmethod
-    def execute_schedules(poll_period=60):
+    def execute_schedules(poll_period: int = 60):
         from .models.schedule import Schedule
+        query = Schedule.query.filter(Schedule.active == True)
 
         while True:
             time.sleep(poll_period)
             log.info(f'Running schedules... with poll_period {poll_period}')
-            for sc in Schedule.query.filter(Schedule.active == True).all():
+            for sc in query.all():
                 try:
                     sc.run()
                 except Exception as e:
                     log.critical(e)
 
+    def create_rabbit_schedule(self) -> dict:
+        schedule_name = 'rabbit_queue_schedule'
+        rabbit_schedule = Schedule.query.filter(
+            Schedule.name == schedule_name
+        ).first()
+        if rabbit_schedule:
+            log.warning('Rabbit queue schedule already exists!')
+        else:
+            rabbit_schedule = Schedule(
+                name=schedule_name,
+                cron="*/10 * * * *",
+                active=True,
+                rpc_func="check_rabbit_queues",
+                rpc_kwargs={}
+            )
+            rabbit_schedule.insert()
+            log.warning('Rabbit queue schedule created')
+
+        return rabbit_schedule.to_json()

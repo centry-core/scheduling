@@ -1,73 +1,18 @@
-from typing import Optional, List
+from typing import List
 
 from pydantic import BaseModel, AnyUrl
-from pydantic.class_validators import validator
-from pydantic.fields import ModelField
 
-from croniter import croniter
-
+from .main_pd import BaseScheduleModel
 from ...shared.models.pd.test_parameters import TestParameter
-from .schedule import Schedule
-# from ...shared.models.pd.test_parameters import test_param_model_factory
 
 
 class SecurityScheduleTestParam(TestParameter):
+    class Config:
+        anystr_lower = True
     _type_mapping_by_name = {'url to scan': List[AnyUrl]}
 
 
-class SecurityScheduleModel(BaseModel):
+class SecurityScheduleModel(BaseScheduleModel):
     _rpc_func = 'security_run_scheduled_test'
-
-    name: str
-    cron: str
-    # test_params: List[test_param_model_factory()]
     test_params: List[SecurityScheduleTestParam]
-    active: bool
-    test_id: Optional[int] = None
-    id: Optional[int] = None
 
-    @validator('cron')
-    def validate_cron(cls, value: list, field: ModelField):
-        assert croniter.is_valid(value), 'Cron expression is invalid'
-        return value
-
-    @validator('name')
-    def validate_empty(cls, value):
-        assert bool(value), 'Cannot be empty'
-        return value
-
-    @property
-    def _db_schedule(self):
-        return Schedule(
-            name=self.name,
-            cron=self.cron,
-            active=self.active,
-            rpc_func=self._rpc_func,
-            rpc_kwargs={
-                'test_id': self.test_id,
-                'test_params': [i.dict() for i in self.test_params],
-            }
-        )
-
-    def save(self) -> int:
-        assert self.test_id, 'Test id is required'
-        if self.id:
-            db_obj = Schedule.query.filter(Schedule.id == self.id)
-            db_obj.update(self._db_schedule.to_json(exclude_fields=('id', 'last_run', )))
-            Schedule.commit()
-            return self.id
-        else:
-            db_obj = self._db_schedule
-            db_obj.insert()
-            return db_obj.id
-
-    @classmethod
-    def from_orm(cls, db_obj: Schedule):
-        return cls(
-            name=db_obj.name,
-            cron=db_obj.cron,
-            active=db_obj.active,
-            test_params=db_obj.rpc_kwargs.get('test_params', []),
-            id=db_obj.id,
-            test_id=db_obj.rpc_kwargs.get('test_id'),
-        )
