@@ -18,7 +18,9 @@
 """ Module """
 import time
 from functools import partial
+from queue import Empty
 from threading import Thread
+from traceback import format_exc
 
 from pylon.core.tools import log, web  # pylint: disable=E0611,E0401
 from pylon.core.tools import module  # pylint: disable=E0611,E0401
@@ -51,6 +53,7 @@ class Module(module.ModuleModel):
         self.descriptor.init_slots()
 
         self.create_rabbit_schedule()
+        self.create_retention_schedules()
 
         self.thread = Thread(
             target=partial(
@@ -81,21 +84,24 @@ class Module(module.ModuleModel):
                     log.critical(e)
 
     def create_rabbit_schedule(self) -> dict:
-        schedule_name = 'rabbit_queue_schedule'
-        rabbit_schedule = Schedule.query.filter(
-            Schedule.name == schedule_name
-        ).first()
-        if rabbit_schedule:
-            log.warning('Rabbit queue schedule already exists!')
-        else:
-            rabbit_schedule = Schedule(
-                name=schedule_name,
-                cron="*/10 * * * *",
-                active=True,
-                rpc_func="check_rabbit_queues",
-                rpc_kwargs={}
-            )
-            rabbit_schedule.insert()
-            log.warning('Rabbit queue schedule created')
+        pd = self.create_if_not_exists({
+            'name': 'rabbit_queue_schedule',
+            'cron': '*/10 * * * *',
+            'rpc_func': 'check_rabbit_queues'
+        })
+        return pd.dict()
 
-        return rabbit_schedule.to_json()
+    def create_retention_schedules(self):
+        for i in self.descriptor.config.get('results_retention_plugins', []):
+            try:
+                data = self.context.rpc_manager.call_function_with_timeout(
+                    func=f'{i}_get_retention_schedule_data',
+                    timeout=2,
+                )
+                log.info('Got retention schedule data from %s : %s', i, data)
+                try:
+                    self.create_if_not_exists(data)
+                except:
+                    log.critical('Failed creating retention schedule\n%s', format_exc())
+            except Empty:
+                ...

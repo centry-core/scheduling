@@ -1,1 +1,6 @@
 task_poll_period: 60
+results_retention_plugins:
+  - backend_performance
+#  - ui_performance
+#  - security
+#  - security_sast

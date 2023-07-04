@@ -2,7 +2,7 @@ from typing import List
 from pydantic import parse_obj_as
 
 from ..models.schedule import Schedule
-from ..models.ui_performance_pd import UiPerformanceScheduleModel
+from ..models.performance_pd import UiPerformanceScheduleModel
 
 from pylon.core.tools import web
 
