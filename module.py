@@ -87,7 +87,7 @@ class Module(module.ModuleModel):
         pd = self.create_if_not_exists({
             'name': 'rabbit_queue_schedule',
             'cron': '*/10 * * * *',
-            'rpc_func': 'check_rabbit_queues'
+            'rpc_func': 'tasks_check_rabbit_queues'
         })
         return pd.dict()
 
