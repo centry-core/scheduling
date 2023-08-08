@@ -14,16 +14,22 @@ from .schedule import Schedule
 from abc import ABC, abstractmethod
 
 
-class BaseScheduleModel(BaseModel, ABC):
-    id: Optional[int] = None
-    name: constr(min_length=1)
-    cron: str
-    active: bool = True
+class SchedulePutModel(BaseModel):
+    name: Optional[str] = None
+    cron: Optional[str] = None
+    active: Optional[bool] = None
 
     @validator('cron')
     def validate_cron(cls, value: str):
         assert croniter.is_valid(value), 'Cron expression is invalid'
         return value
+
+
+class BaseScheduleModel(SchedulePutModel, ABC):
+    id: Optional[int] = None
+    name: constr(min_length=1)
+    cron: str
+    active: bool = True
 
     @abstractmethod
     def save(self) -> int:
@@ -51,6 +57,7 @@ class ScheduleModelPD(BaseScheduleModel):
 
 
 class BaseTestScheduleModel(BaseScheduleModel, ABC):
+    project_id: Optional[int] = None
     test_id: Optional[int] = None
     test_params: List[TestParameter]
 
@@ -62,6 +69,7 @@ class BaseTestScheduleModel(BaseScheduleModel, ABC):
     @property
     def _db_schedule(self):
         return Schedule(
+            project_id=self.project_id,
             name=self.name,
             cron=self.cron,
             active=self.active,
@@ -87,6 +95,7 @@ class BaseTestScheduleModel(BaseScheduleModel, ABC):
     @classmethod
     def from_orm(cls, db_obj: Schedule):
         return cls(
+            project_id=db_obj.project_id,
             name=db_obj.name,
             cron=db_obj.cron,
             active=db_obj.active,

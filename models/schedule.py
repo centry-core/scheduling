@@ -14,6 +14,7 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=False, nullable=False)
+    project_id = Column(Integer, unique=False, nullable=True, default=None)
     cron = Column(String(64), unique=False, nullable=False)
     active = Column(Boolean, default=True)
     rpc_func = Column(String(64), unique=False, nullable=False)
