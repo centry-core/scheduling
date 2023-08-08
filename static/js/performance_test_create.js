@@ -121,11 +121,11 @@ const ScheduleItem = {
                                     <input class="mx-2 custom-radio" 
                                         type="radio"
                                         :value="t"
-                                        :id="'cron_radio_' + t"
+                                        :id="'cron_radio_' + schedule_id + '_' + t"
                                         :name="'cron_radio_' + schedule_id"
                                         :checked="cron_radio === t"
                                         @change="handleInputChange">
-                                    <label class="mb-0 w-100 d-flex align-items-center" :for="'cron_radio_' + t">
+                                    <label class="mb-0 w-100 d-flex align-items-center" :for="'cron_radio_' + schedule_id + '_' + t">
                                         <span class="w-100 d-inline-block font-h5 font-weight-400 text-capitalize">[[ t ]]</span>
                                     </label>
                                 </div>

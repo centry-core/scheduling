@@ -38,6 +38,7 @@ class Module(module.ModuleModel):
     def __init__(self, context, descriptor):
         self.context = context
         self.descriptor = descriptor
+        self.thread = None
 
     def init(self):
         """ Init module """
@@ -54,6 +55,9 @@ class Module(module.ModuleModel):
 
         self.create_rabbit_schedule()
         self.create_retention_schedules()
+
+        self.descriptor.init_api()
+        self.init_ui()
 
         self.thread = Thread(
             target=partial(
@@ -105,3 +109,39 @@ class Module(module.ModuleModel):
                     log.critical('Failed creating retention schedule\n%s', format_exc())
             except Empty:
                 ...
+
+    def init_ui(self):
+        from tools import theme
+
+        prefix = 'configuration_scheduling_'
+
+        theme.register_subsection(
+            'configuration', 'schedules',
+            'Schedules',
+            title="Schedules",
+            kind="slot",
+            permissions={
+                "permissions": ["configuration.scheduling"],
+                "recommended_roles": {
+                    "administration": {"admin": True, "viewer": True, "editor": True},
+                    "default": {"admin": True, "viewer": True, "editor": True},
+                }},
+            prefix=prefix,
+            # weight=5,
+        )
+
+        theme.register_mode_subsection(
+            "administration", "configuration",
+            "schedules", "Schedules",
+            title="Integrations",
+            kind="slot",
+            permissions={
+                "permissions": ["configuration.scheduling"],
+                "recommended_roles": {
+                    "administration": {"admin": True, "viewer": True, "editor": True},
+                    "default": {"admin": True, "viewer": True, "editor": True},
+                }},
+            prefix=prefix,
+            # icon_class="fas fa-server fa-fw",
+            # weight=2,
+        )
