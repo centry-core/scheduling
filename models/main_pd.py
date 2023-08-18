@@ -18,6 +18,7 @@ class SchedulePutModel(BaseModel):
     name: Optional[str] = None
     cron: Optional[str] = None
     active: Optional[bool] = None
+    rpc_kwargs: Optional[dict] = None
 
     @validator('cron')
     def validate_cron(cls, value: str):

@@ -27,9 +27,10 @@
         <th scope="col" data-sortable="true" data-field="active"
             data-formatter=tableFormatters.active
         >Active</th>
-{#        <th scope="col" data-sortable="true" data-field="rpc_kwargs"#}
-{#            data-formatter=tableFormatters.rpc_kwargs#}
-{#        >rpc_kwargs</th>#}
+        <th scope="col" data-sortable="true" data-field="rpc_kwargs"
+            data-formatter=tableFormatters.rpc_kwargs
+            v-if="mode === 'administration'"
+        >rpc_kwargs</th>
         <th scope="col" data-sortable="true" data-field="last_run"
             data-formatter=tableFormatters.last_run
         >Last Run</th>
