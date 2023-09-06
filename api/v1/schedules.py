@@ -56,8 +56,8 @@ class AdminAPI(api_tools.APIModeHandler):
 
 class API(api_tools.APIBase):
     url_params = [
-        '<int:project_id>',
-        '<string:mode>/<int:project_id>'
+        '<string:project_id>',
+        '<string:mode>/<string:project_id>'
     ]
 
     mode_handlers = {
