@@ -76,12 +76,10 @@ class Module(module.ModuleModel):
     @staticmethod
     def execute_schedules(poll_period: int = 60):
         from .models.schedule import Schedule
-        query = Schedule.query.filter(Schedule.active == True)
-
         while True:
             time.sleep(poll_period)
             log.info(f'Running schedules... with poll_period {poll_period}')
-            for sc in query.all():
+            for sc in Schedule.query.filter(Schedule.active == True).all():
                 try:
                     sc.run()
                 except Exception as e:
