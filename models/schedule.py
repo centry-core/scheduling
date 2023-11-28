@@ -46,7 +46,5 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
 
         if self.last_run:
             next_run = croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
-            if next_run < 0:
-                next_run = 'ASAP'
             log.info('Next run in: [%s]', next_run)
         log.info('')
