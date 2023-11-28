@@ -45,8 +45,8 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
                 log.critical(f'Schedule func failed to run {self.rpc_func}')
 
         if self.last_run:
-            log.info(
-                'Next run in: [%s]',
-                croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
-            )
+            next_run = croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
+            if next_run < 0:
+                next_run = 'ASAP'
+            log.info('Next run in: [%s]', next_run)
         log.info('')
