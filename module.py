@@ -76,14 +76,17 @@ class Module(module.ModuleModel):
     @staticmethod
     def execute_schedules(poll_period: int = 60):
         from .models.schedule import Schedule
+        from tools import db
         while True:
             time.sleep(poll_period)
             log.info(f'Running schedules... with poll_period {poll_period}')
-            for sc in Schedule.query.filter(Schedule.active == True).all():
-                try:
-                    sc.run()
-                except Exception as e:
-                    log.critical(e)
+            with db.with_project_schema_session(None) as session:
+                schedules = session.query(Schedule).filter(Schedule.active == True).all()
+                for sc in schedules:
+                    try:
+                        sc.run()
+                    except Exception as e:
+                        log.critical(e)
 
     def create_rabbit_schedule(self) -> dict:
         pd = self.create_if_not_exists({
