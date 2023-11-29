@@ -85,6 +85,7 @@ class Module(module.ModuleModel):
                 for sc in schedules:
                     try:
                         sc.run()
+                        session.commit()
                     except Exception as e:
                         log.critical(e)
 
