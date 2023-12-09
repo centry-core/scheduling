@@ -28,6 +28,7 @@ from pylon.core.tools import module  # pylint: disable=E0611,E0401
 from .init_db import init_db
 
 from tools import VaultClient
+from tools import config as c
 
 from .models.schedule import Schedule
 
@@ -53,7 +54,9 @@ class Module(module.ModuleModel):
         # self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
         self.descriptor.init_slots()
 
-        self.create_rabbit_schedule()
+        if c.ARBITER_RUNTIME == "rabbitmq":
+            self.create_rabbit_schedule()
+
         self.create_retention_schedules()
 
         self.descriptor.init_api()
