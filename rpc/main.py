@@ -41,3 +41,10 @@ class RPC:
             pd = self.create_schedule(pd)
             log.info('Schedule created: name=%s id=%s', pd.name, pd.id)
         return pd
+
+    @web.rpc()
+    def make_active(self, schedule_name, value=True):
+        schedule = Schedule.query.filter(Schedule.name == schedule_name).first()
+        if schedule and schedule.active != value:
+            schedule.active = value
+            schedule.commit()
