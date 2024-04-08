@@ -3,15 +3,14 @@ from typing import Optional, List
 
 from pydantic import BaseModel, constr
 from pydantic.class_validators import validator
-from pydantic.fields import ModelField
 
 from croniter import croniter
 
 from ...shared.models.pd.test_parameters import TestParameter  # todo: try to find workaround for this import
 from .schedule import Schedule
 
-
 from abc import ABC, abstractmethod
+from tools import db
 
 
 class SchedulePutModel(BaseModel):
@@ -46,15 +45,19 @@ class ScheduleModelPD(BaseScheduleModel):
         orm_mode = True
 
     def save(self) -> int:
-        if self.id:
-            db_obj = Schedule.query.filter(Schedule.id == self.id)
-            db_obj.update(self.dict(exclude_unset=True, exclude={'id', 'last_run'}))
-            Schedule.commit()
-        else:
-            db_obj = Schedule(**self.dict(exclude_unset=True, exclude={'id', 'last_run'}))
-            db_obj.insert()
-            self.id = db_obj.id
-        return self.id
+        with db.with_project_schema_session(None) as session:
+            if self.id:
+                session.query(Schedule).where(
+                    Schedule.id == self.id
+                ).update(
+                    self.dict(exclude_unset=True, exclude={'id', 'last_run'})
+                )
+            else:
+                db_obj = Schedule(**self.dict(exclude_unset=True, exclude={'id', 'last_run'}))
+                session.add(db_obj)
+                session.commit()
+                self.id = db_obj.id
+            return self.id
 
 
 class BaseTestScheduleModel(BaseScheduleModel, ABC):
@@ -83,15 +86,19 @@ class BaseTestScheduleModel(BaseScheduleModel, ABC):
 
     def save(self) -> int:
         assert self.test_id, 'Test id is required'
-        if self.id:
-            db_obj = Schedule.query.filter(Schedule.id == self.id)
-            db_obj.update(self._db_schedule.to_json(exclude_fields=('id', 'last_run',)))
-            Schedule.commit()
+        with db.with_project_schema_session(None) as session:
+            if self.id:
+                session.query(Schedule).where(
+                    Schedule.id == self.id
+                ).update(
+                    self._db_schedule.to_json(exclude_fields=('id', 'last_run',))
+                )
+            else:
+                db_obj = self._db_schedule
+                session.add(db_obj)
+                session.commit()
+                self.id = db_obj.id
             return self.id
-        else:
-            db_obj = self._db_schedule
-            db_obj.insert()
-            return db_obj.id
 
     @classmethod
     def from_orm(cls, db_obj: Schedule):

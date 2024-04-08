@@ -1,23 +1,23 @@
 from typing import List, Union
 
-from pydantic import parse_obj_as
 from ..models.schedule import Schedule
 from ..models.main_pd import ScheduleModelPD
 
 from pylon.core.tools import web, log
 
+from tools import db
+
 
 class RPC:
     @web.rpc('scheduling_delete_schedules')
     def delete_schedules(self, delete_ids: List[int]) -> List[int]:
-        Schedule.query.filter(Schedule.id.in_(delete_ids)).delete()
-        Schedule.commit()
+        with db.with_project_schema_session(None) as session:
+            session.query(Schedule).where(Schedule.id.in_(delete_ids)).delete()
         return delete_ids
 
     @web.rpc('get_schedules')
-    def get_schedules(self) -> List[Schedule]:
-        schedules = Schedule.query.all()
-        return schedules
+    def get_schedules(self, session=db.session) -> List[Schedule]:
+        return session.query(Schedule).all()
 
     @web.rpc('scheduling_create_schedule', 'create_schedule')
     def create_schedule(self, schedule_data: Union[dict, ScheduleModelPD]) -> ScheduleModelPD:
@@ -30,21 +30,21 @@ class RPC:
 
     @web.rpc('scheduling_create_if_not_exists', 'create_if_not_exists')
     def create_if_not_exists(self, schedule_data: dict) -> ScheduleModelPD:
-        pd = ScheduleModelPD.parse_obj(schedule_data)
-        bd_schedule = Schedule.query.filter(
-            Schedule.name == pd.name
-        ).first()
-        if bd_schedule:
-            pd = ScheduleModelPD.from_orm(bd_schedule)
-            log.info('Schedule already exists: name=%s id=%s', pd.name, pd.id)
-        else:
-            pd = self.create_schedule(pd)
-            log.info('Schedule created: name=%s id=%s', pd.name, pd.id)
-        return pd
+        with db.with_project_schema_session(None) as session:
+            pd = ScheduleModelPD.parse_obj(schedule_data)
+            bd_schedule = session.query(Schedule).where(Schedule.name == pd.name).first()
+            if bd_schedule:
+                pd = ScheduleModelPD.from_orm(bd_schedule)
+                log.info('Schedule already exists: name=%s id=%s', pd.name, pd.id)
+            else:
+                pd = self.create_schedule(pd)
+                log.info('Schedule created: name=%s id=%s', pd.name, pd.id)
+            return pd
 
     @web.rpc()
     def make_active(self, schedule_name, value=True):
-        schedule = Schedule.query.filter(Schedule.name == schedule_name).first()
-        if schedule and schedule.active != value:
-            schedule.active = value
-            schedule.commit()
+        with db.with_project_schema_session(None) as session:
+            schedule = session.query(Schedule).where(Schedule.name == schedule_name).first()
+            if schedule and schedule.active != value:
+                schedule.active = value
+                session.commit()

@@ -1,7 +1,7 @@
 from flask import request
 from pylon.core.tools import log
 
-from tools import api_tools
+from tools import api_tools, db
 
 from pydantic import ValidationError
 from ...models.main_pd import SchedulePutModel
@@ -24,11 +24,12 @@ class ProjectAPI(api_tools.APIModeHandler):
             return e.errors(), 400
         # log.info('UPD %s', data.dict(exclude_unset=True))
 
-        Schedule.query.filter(
-            Schedule.project_id == project_id,
-            Schedule.id == schedule_id
-        ).update(data.dict(exclude_unset=True))
-        Schedule.commit()
+        with db.with_project_schema_session(None) as session:
+            session.query(Schedule).where(
+                Schedule.project_id == project_id,
+                Schedule.id == schedule_id
+            ).update(data.dict(exclude_unset=True))
+            session.commit()
         return None, 204
 
 
@@ -47,10 +48,11 @@ class AdminAPI(api_tools.APIModeHandler):
             return e.errors(), 400
         # log.info('UPD %s', data.dict(exclude_unset=True))
 
-        Schedule.query.filter(
-            Schedule.id == schedule_id
-        ).update(data.dict(exclude_unset=True))
-        Schedule.commit()
+        with db.with_project_schema_session(None) as session:
+            session.query(Schedule).where(
+                Schedule.id == schedule_id
+            ).update(data.dict(exclude_unset=True))
+            session.commit()
         return None, 204
 
 
