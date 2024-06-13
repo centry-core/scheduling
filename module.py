@@ -81,16 +81,20 @@ class Module(module.ModuleModel):
         from .models.schedule import Schedule
         from tools import db
         while True:
-            time.sleep(poll_period)
-            log.info(f'Running schedules... with poll_period {poll_period}')
-            with db.with_project_schema_session(None) as session:
-                schedules = session.query(Schedule).filter(Schedule.active == True).all()
-                for sc in schedules:
-                    try:
-                        sc.run()
-                        session.commit()
-                    except Exception as e:
-                        log.critical(e)
+            try:
+                time.sleep(poll_period)
+                log.info(f'Running schedules... with poll_period {poll_period}')
+                with db.with_project_schema_session(None) as session:
+                    schedules = session.query(Schedule).filter(Schedule.active == True).all()
+                    for sc in schedules:
+                        try:
+                            sc.run()
+                            session.commit()
+                        except Exception as e:
+                            log.critical(e)
+            except:  # pylint: disable=W0702
+                log.exception("Error in scheduler loop, continuing in 5 seconds")
+                time.sleep(5)
 
     def create_rabbit_schedule(self) -> dict:
         pd = self.create_if_not_exists({
