@@ -70,6 +70,10 @@ class Module(module.ModuleModel):
         )
         self.thread.daemon = True
         self.thread.name = 'scheduling_thread'
+
+    def ready(self):
+        """ Ready callback """
+        log.info("Starting scheduling thread")
         self.thread.start()
 
     def deinit(self):  # pylint: disable=R0201
