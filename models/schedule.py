@@ -27,10 +27,12 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
             return True
         return croniter(self.cron, self.last_run, datetime).get_next() <= datetime.now()
 
-    def run(self):
-        log.info('')
-        log.info(f'Trying to run schedule {self.id}')
-        log.info(f'Is it time_to_run? {self.time_to_run}')
+    def run(self, debug=False):
+        if debug:
+            log.info('')
+            log.info(f'Trying to run schedule {self.id}')
+            log.info(f'Is it time_to_run? {self.time_to_run}')
+        #
         if self.time_to_run:
             log.info('Running now: Schedule(id=%s, name=%s)', self.id, self.name)
             try:
@@ -43,8 +45,11 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
                 self.commit()
             except Empty:
                 log.critical(f'Schedule func failed to run {self.rpc_func}')
-
+        #
         if self.last_run:
             next_run = croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
+            #
             log.info('Next run in: [%s]', next_run)
-        log.info('')
+        #
+        if debug:
+            log.info('')

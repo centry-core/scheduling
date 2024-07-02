@@ -65,7 +65,8 @@ class Module(module.ModuleModel):
         self.thread = Thread(
             target=partial(
                 self.execute_schedules,
-                self.descriptor.config['task_poll_period']
+                self.descriptor.config['task_poll_period'],
+                self.descriptor.config['debug'],
             )
         )
         self.thread.daemon = True
@@ -81,18 +82,21 @@ class Module(module.ModuleModel):
         log.info("De-initializing")
 
     @staticmethod
-    def execute_schedules(poll_period: int = 60):
+    def execute_schedules(poll_period: int = 60, debug=False):
         from .models.schedule import Schedule
         from tools import db
         while True:
             try:
                 time.sleep(poll_period)
-                log.info(f'Running schedules... with poll_period {poll_period}')
+                #
+                if debug:
+                    log.info(f'Running schedules... with poll_period {poll_period}')
+                #
                 with db.with_project_schema_session(None) as session:
                     schedules = session.query(Schedule).filter(Schedule.active == True).all()
                     for sc in schedules:
                         try:
-                            sc.run()
+                            sc.run(debug)
                             session.commit()
                         except Exception as e:
                             log.critical(e)

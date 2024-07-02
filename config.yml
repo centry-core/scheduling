@@ -4,3 +4,4 @@ results_retention_plugins:
 #  - ui_performance
 #  - security
 #  - security_sast
+debug: false
