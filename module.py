@@ -24,6 +24,7 @@ from traceback import format_exc
 
 from pylon.core.tools import log, web  # pylint: disable=E0611,E0401
 from pylon.core.tools import module  # pylint: disable=E0611,E0401
+from pylon.core.tools import db_support  # pylint: disable=E0611,E0401
 
 from .init_db import init_db
 
@@ -86,6 +87,7 @@ class Module(module.ModuleModel):
         from .models.schedule import Schedule
         from tools import db
         while True:
+            db_support.create_local_session()
             try:
                 time.sleep(poll_period)
                 #
@@ -103,6 +105,8 @@ class Module(module.ModuleModel):
             except:  # pylint: disable=W0702
                 log.exception("Error in scheduler loop, continuing in 5 seconds")
                 time.sleep(5)
+            finally:
+                db_support.close_local_session()
 
     def create_rabbit_schedule(self) -> dict:
         pd = self.create_if_not_exists({
