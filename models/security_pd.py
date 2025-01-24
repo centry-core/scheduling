@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import AnyUrl
+from pydantic.v1 import AnyUrl
 
 from .main_pd import BaseTestScheduleModel
 from ...shared.models.pd.test_parameters import TestParameter

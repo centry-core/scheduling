@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, constr
-from pydantic.class_validators import validator
+from pydantic.v1 import BaseModel, constr
+from pydantic.v1.class_validators import validator
 
 from croniter import croniter
 
