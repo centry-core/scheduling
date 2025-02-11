@@ -3,7 +3,7 @@ from pylon.core.tools import log
 
 from tools import api_tools, db
 
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 from ...models.main_pd import SchedulePutModel
 from ...models.schedule import Schedule
 from tools import auth
