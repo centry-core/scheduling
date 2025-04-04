@@ -87,26 +87,30 @@ class Module(module.ModuleModel):
         from .models.schedule import Schedule
         from tools import db
         while True:
-            db_support.create_local_session()
             try:
-                time.sleep(poll_period)
-                #
-                if debug:
-                    log.info(f'Running schedules... with poll_period {poll_period}')
-                #
-                with db.with_project_schema_session(None) as session:
-                    schedules = session.query(Schedule).filter(Schedule.active == True).all()
-                    for sc in schedules:
-                        try:
-                            sc.run(debug)
-                            session.commit()
-                        except Exception as e:
-                            log.critical(e)
+                db_support.create_local_session()
+                try:
+                    time.sleep(poll_period)
+                    #
+                    if debug:
+                        log.info(f'Running schedules... with poll_period {poll_period}')
+                    #
+                    with db.with_project_schema_session(None) as session:
+                        schedules = session.query(Schedule).filter(Schedule.active == True).all()
+                        for sc in schedules:
+                            try:
+                                sc.run(debug)
+                                session.commit()
+                            except Exception as e:
+                                log.critical(e)
+                except:  # pylint: disable=W0702
+                    log.exception("Error in scheduler loop, continuing in 5 seconds")
+                    time.sleep(5)
+                finally:
+                    db_support.close_local_session()
             except:  # pylint: disable=W0702
-                log.exception("Error in scheduler loop, continuing in 5 seconds")
-                time.sleep(5)
-            finally:
-                db_support.close_local_session()
+                log.exception("Critical error in scheduler loop, continuing in 15 seconds")
+                time.sleep(15)
 
     def create_rabbit_schedule(self) -> dict:
         pd = self.create_if_not_exists({
