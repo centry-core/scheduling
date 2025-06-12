@@ -31,10 +31,10 @@ class RPC:
     @web.rpc('scheduling_create_if_not_exists', 'create_if_not_exists')
     def create_if_not_exists(self, schedule_data: dict) -> ScheduleModelPD:
         with db.with_project_schema_session(None) as session:
-            pd = ScheduleModelPD.parse_obj(schedule_data)
+            pd = ScheduleModelPD.model_validate(schedule_data)
             bd_schedule = session.query(Schedule).where(Schedule.name == pd.name).first()
             if bd_schedule:
-                pd = ScheduleModelPD.from_orm(bd_schedule)
+                pd = ScheduleModelPD.model_validate(bd_schedule)
                 log.info('Schedule already exists: name=%s id=%s', pd.name, pd.id)
             else:
                 pd = self.create_schedule(pd)
@@ -42,8 +42,8 @@ class RPC:
             return pd
 
     @web.rpc()
-    def make_active(self, schedule_name, value=True):
-        with db.with_project_schema_session(None) as session:
+    def make_active(self, schedule_name: str, value: bool = True):
+        with db.get_session(None) as session:
             schedule = session.query(Schedule).where(Schedule.name == schedule_name).first()
             if schedule and schedule.active != value:
                 schedule.active = value

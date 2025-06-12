@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic.v1 import BaseModel, constr
-from pydantic.v1.class_validators import validator
+from pydantic import BaseModel, constr, field_validator, ConfigDict
 
 from croniter import croniter
 
@@ -19,7 +18,7 @@ class SchedulePutModel(BaseModel):
     active: Optional[bool] = None
     rpc_kwargs: Optional[dict] = None
 
-    @validator('cron')
+    @field_validator('cron')
     def validate_cron(cls, value: str):
         assert croniter.is_valid(value), 'Cron expression is invalid'
         return value
@@ -37,12 +36,11 @@ class BaseScheduleModel(SchedulePutModel, ABC):
 
 
 class ScheduleModelPD(BaseScheduleModel):
+    model_config = ConfigDict(from_attributes=True)
     rpc_func: str
     rpc_kwargs: dict = {}
     last_run: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
 
     def save(self) -> int:
         with db.with_project_schema_session(None) as session:
@@ -50,7 +48,7 @@ class ScheduleModelPD(BaseScheduleModel):
                 session.query(Schedule).where(
                     Schedule.id == self.id
                 ).update(
-                    self.dict(exclude_unset=True, exclude={'id', 'last_run'})
+                    self.model_dump(exclude_unset=True, exclude={'id', 'last_run'})
                 )
             else:
                 db_obj = Schedule(**self.dict(exclude_unset=True, exclude={'id', 'last_run'}))

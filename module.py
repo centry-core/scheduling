@@ -16,10 +16,11 @@
 #   limitations under the License.
 
 """ Module """
-import time
-from functools import partial
-from queue import Empty
-from threading import Thread
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from traceback import format_exc
 
 from pylon.core.tools import log, web  # pylint: disable=E0611,E0401
@@ -30,6 +31,7 @@ from .init_db import init_db
 
 from tools import VaultClient
 from tools import config as c
+from queue import Empty
 
 from .models.schedule import Schedule
 
@@ -40,11 +42,13 @@ class Module(module.ModuleModel):
     def __init__(self, context, descriptor):
         self.context = context
         self.descriptor = descriptor
-        self.thread = None
+        self.scheduler = None
 
     def init(self):
         """ Init module """
         log.info("Initializing module")
+        if c.DATABASE_VENDOR != 'postgres':
+            raise Exception(f'Scheduling does not support db vendor: {c.DATABASE_VENDOR}. Supported are: ["postgres"]')
 
         init_db()
 
@@ -52,8 +56,14 @@ class Module(module.ModuleModel):
 
         self.descriptor.init_rpcs()
 
-        # self.context.slot_manager.register_callback('security_scheduling_test_create', render_security_test_create)
         self.descriptor.init_slots()
+
+        # Configure the PostgreSQL connection
+        db_url = f'postgresql://{c.POSTGRES_USER}:{c.POSTGRES_PASSWORD}@{c.POSTGRES_HOST}:{c.POSTGRES_PORT}/{c.POSTGRES_DB}'
+        jobstores = {
+            'default': SQLAlchemyJobStore(url=db_url)
+        }
+        self.scheduler = BackgroundScheduler(jobstores=jobstores)
 
         if c.ARBITER_RUNTIME == "rabbitmq":
             self.create_rabbit_schedule()
@@ -63,77 +73,44 @@ class Module(module.ModuleModel):
         self.descriptor.init_api()
         self.init_ui()
 
-        self.thread = Thread(
-            target=partial(
-                self.execute_schedules,
-                self.descriptor.config['task_poll_period'],
-                self.descriptor.config['debug'],
-            )
-        )
-        self.thread.daemon = True
-        self.thread.name = 'scheduling_thread'
+        self.scheduler.start()
 
     def ready(self):
         """ Ready callback """
-        log.info("Starting scheduling thread")
-        self.thread.start()
+        log.info("Scheduler started")
 
     def deinit(self):  # pylint: disable=R0201
         """ De-init module """
         log.info("De-initializing")
+        self.scheduler.shutdown()
 
-    @staticmethod
-    def execute_schedules(poll_period: int = 60, debug=False):
+    def execute_schedules(self, debug=False):
         from .models.schedule import Schedule
         from tools import db
-        while True:
-            try:
-                db_support.create_local_session()
-                try:
-                    time.sleep(poll_period)
-                    #
-                    if debug:
-                        log.info(f'Running schedules... with poll_period {poll_period}')
-                    #
-                    with db.with_project_schema_session(None) as session:
-                        schedules = session.query(Schedule).filter(Schedule.active == True).all()
-                        for sc in schedules:
-                            try:
-                                sc.run(debug)
-                                session.commit()
-                            except Exception as e:
-                                log.critical(e)
-                except:  # pylint: disable=W0702
-                    log.exception("Error in scheduler loop, continuing in 5 seconds")
-                    time.sleep(5)
-                finally:
-                    db_support.close_local_session()
-            except:  # pylint: disable=W0702
-                log.exception("Critical error in scheduler loop, continuing in 15 seconds")
-                time.sleep(15)
+        try:
+            db_support.create_local_session()
+            if debug:
+                log.info('Running schedules...')
+            with db.with_project_schema_session(None) as session:
+                schedules = session.query(Schedule).filter(Schedule.active == True).all()
+                for sc in schedules:
+                    try:
+                        sc.run(debug)
+                        session.commit()
+                    except Exception as e:
+                        log.critical(e)
+        except:  # pylint: disable=W0702
+            log.exception("Error in scheduler loop")
+        finally:
+            db_support.close_local_session()
 
     def create_rabbit_schedule(self) -> dict:
-        pd = self.create_if_not_exists({
-            'name': 'rabbit_queue_schedule',
-            'cron': '*/10 * * * *',
-            'rpc_func': 'tasks_check_rabbit_queues'
-        })
-        return pd.dict()
-
-    def create_retention_schedules(self):
-        for i in self.descriptor.config.get('results_retention_plugins', []):
-            try:
-                data = self.context.rpc_manager.call_function_with_timeout(
-                    func=f'{i}_get_retention_schedule_data',
-                    timeout=2,
-                )
-                log.info('Got retention schedule data from %s : %s', i, data)
-                try:
-                    self.create_if_not_exists(data)
-                except:
-                    log.critical('Failed creating retention schedule\n%s', format_exc())
-            except Empty:
-                ...
+        self.scheduler.add_job(
+            self.execute_schedules,
+            trigger=CronTrigger.from_crontab('*/10 * * * *'),
+            kwargs={'debug': self.descriptor.config['debug']}
+        )
+        return {'name': 'rabbit_queue_schedule'}
 
     def init_ui(self):
         from tools import theme
@@ -152,7 +129,6 @@ class Module(module.ModuleModel):
                     "default": {"admin": True, "viewer": True, "editor": True},
                 }},
             prefix=prefix,
-            # weight=5,
         )
 
         theme.register_mode_subsection(
@@ -167,6 +143,4 @@ class Module(module.ModuleModel):
                     "default": {"admin": True, "viewer": True, "editor": True},
                 }},
             prefix=prefix,
-            # icon_class="fas fa-server fa-fw",
-            # weight=2,
         )
