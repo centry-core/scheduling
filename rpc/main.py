@@ -1,9 +1,12 @@
+from datetime import datetime
 from typing import List, Union
 
 from ..models.schedule import Schedule
 from ..models.main_pd import ScheduleModelPD
 
 from pylon.core.tools import web, log
+
+from croniter import croniter
 
 from tools import db
 
@@ -48,3 +51,13 @@ class RPC:
             if schedule and schedule.active != value:
                 schedule.active = value
                 session.commit()
+
+    @web.rpc('scheduling_time_to_run', 'time_to_run')
+    def time_to_run(self, cron: str, last_run: datetime | str, utc: bool = True):
+        if not last_run:
+            return True
+        if isinstance(last_run, str):
+            if utc:
+                last_run = last_run.replace('Z', '+00:00')
+            last_run = datetime.fromisoformat(last_run)
+        return croniter(cron, last_run, datetime).get_next() <= datetime.now()
