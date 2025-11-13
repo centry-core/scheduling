@@ -60,4 +60,5 @@ class RPC:
             if utc:
                 last_run = last_run.replace('Z', '+00:00')
             last_run = datetime.fromisoformat(last_run)
-        return croniter(cron, last_run, datetime).get_next() <= datetime.now()
+        now = datetime.now(last_run.tzinfo) if last_run.tzinfo else datetime.now()
+        return croniter(cron, last_run, datetime).get_next() <= now
