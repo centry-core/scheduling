@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import List, Union
+from zoneinfo import ZoneInfo
 
 from ..models.schedule import Schedule
 from ..models.main_pd import ScheduleModelPD
@@ -53,12 +54,43 @@ class RPC:
                 session.commit()
 
     @web.rpc('scheduling_time_to_run', 'time_to_run')
-    def time_to_run(self, cron: str, last_run: datetime | str, utc: bool = True):
-        if not last_run:
-            return True
-        if isinstance(last_run, str):
-            if utc:
-                last_run = last_run.replace('Z', '+00:00')
-            last_run = datetime.fromisoformat(last_run)
-        now = datetime.now(last_run.tzinfo) if last_run.tzinfo else datetime.now()
-        return croniter(cron, last_run, datetime).get_next() <= now
+    def time_to_run(self, cron: str, last_run: str, timezone: str) -> bool:
+        """Determine if it is time to run a scheduled task.
+
+        Assumptions:
+        - ``last_run`` is an ISO 8601 datetime string with timezone information.
+        - ``timezone`` is a valid IANA timezone string.
+
+        Last run is always stored in UTC, but with explicit timezone offset in the
+        string representation. Cron is evaluated in the provided timezone, which
+        can be different from the timezone of `last_run` (UTC). All comparisons
+        are done in the cron timezone.
+
+        Args:
+            cron: Cron expression string.
+            last_run: The last run time as an ISO 8601 string with timezone.
+            timezone: IANA timezone string for the cron schedule.
+
+        Returns:
+            True if the task should run now, False otherwise.
+        """
+        log.debug(f"time_to_run called with {cron=}, {last_run=}, {timezone=}")
+
+        # Parse last_run string (assumed valid ISO 8601 with tzinfo)
+        last_run_dt = datetime.fromisoformat(last_run)
+
+        # Use provided timezone for cron evaluation
+        tz = ZoneInfo(timezone)
+        now = datetime.now(tz)
+        last_run_in_tz = last_run_dt.astimezone(tz)
+
+        log.debug(f"time_to_run: {cron=}, timezone={timezone}, now={now}, last_run_in_tz={last_run_in_tz}")
+
+        try:
+            next_run = croniter(cron, last_run_in_tz, datetime).get_next()
+        except Exception as error:  # croniter can raise for invalid expressions
+            log.error(f"time_to_run: failed to evaluate cron: {cron=}, last_run_in_tz={last_run_in_tz}, {error=!r}")
+            return False
+
+        log.debug(f"time_to_run: next_run={next_run}, now={now}")
+        return next_run <= now
