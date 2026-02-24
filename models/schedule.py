@@ -1,3 +1,4 @@
+import time as time_module
 from datetime import datetime
 from queue import Empty
 
@@ -27,6 +28,18 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
             return True
         return croniter(self.cron, self.last_run, datetime).get_next() <= datetime.now()
 
+    @staticmethod
+    def _get_tracer():
+        """ Get OpenTelemetry tracer if tracing is enabled """
+        try:
+            from tools import this  # pylint: disable=C0415
+            tracing_mod = this.for_module('tracing').module
+            if tracing_mod.enabled:
+                return tracing_mod.get_tracer()
+        except Exception:  # pylint: disable=W0703
+            pass
+        return None
+
     def run(self, debug=False):
         if debug:
             log.info('')
@@ -35,16 +48,11 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
         #
         if self.time_to_run:
             log.info('Running now: Schedule(id=%s, name=%s)', self.id, self.name)
-            try:
-                self.rpc.call_function_with_timeout(
-                    func=self.rpc_func,
-                    timeout=5,
-                    **self.rpc_kwargs
-                )
-                self.last_run = datetime.now()
-                self.commit()
-            except Empty:
-                log.critical(f'Schedule func failed to run {self.rpc_func}')
+            tracer = self._get_tracer()
+            if tracer:
+                self._run_traced(tracer)
+            else:
+                self._run_untraced()
         #
         if self.last_run:
             next_run = croniter(self.cron, self.last_run, datetime).get_next() - datetime.now()
@@ -54,3 +62,53 @@ class Schedule(db_tools.AbstractBaseMixin, rpc_tools.RpcMixin, db.Base):
         #
         if debug:
             log.info('')
+
+    def _run_traced(self, tracer):
+        """ Execute schedule RPC with OTEL tracing span """
+        from opentelemetry.trace import SpanKind, Status, StatusCode  # pylint: disable=C0415
+        #
+        attributes = {
+            'telemetry.data_type': 'schedule_execution',
+            'schedule.id': self.id,
+            'schedule.name': self.name,
+            'schedule.cron': self.cron,
+            'schedule.rpc_func': self.rpc_func,
+        }
+        if self.project_id is not None:
+            attributes['project.id'] = self.project_id
+        #
+        start = time_module.perf_counter()
+        with tracer.start_as_current_span(
+            f"Schedule: {self.name} -> {self.rpc_func}",
+            kind=SpanKind.INTERNAL,
+            attributes=attributes,
+        ) as span:
+            try:
+                self.rpc.call_function_with_timeout(
+                    func=self.rpc_func,
+                    timeout=5,
+                    **self.rpc_kwargs
+                )
+                duration_ms = (time_module.perf_counter() - start) * 1000
+                span.set_attribute('schedule.duration_ms', duration_ms)
+                span.set_status(Status(StatusCode.OK))
+                self.last_run = datetime.now()
+                self.commit()
+            except Empty:
+                duration_ms = (time_module.perf_counter() - start) * 1000
+                span.set_attribute('schedule.duration_ms', duration_ms)
+                span.set_status(Status(StatusCode.ERROR, f'RPC timeout: {self.rpc_func}'))
+                log.critical(f'Schedule func failed to run {self.rpc_func}')
+
+    def _run_untraced(self):
+        """ Execute schedule RPC without tracing (fallback) """
+        try:
+            self.rpc.call_function_with_timeout(
+                func=self.rpc_func,
+                timeout=5,
+                **self.rpc_kwargs
+            )
+            self.last_run = datetime.now()
+            self.commit()
+        except Empty:
+            log.critical(f'Schedule func failed to run {self.rpc_func}')
